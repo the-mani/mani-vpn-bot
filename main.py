@@ -1,18 +1,49 @@
-```python
+import telebot
 import os
-import json
-import time
-from typing import Optional
-from telebot import TeleBot, types
 
-# ---------------- CONFIG (اینها را تغییر نده — BOT_TOKEN را در Render به عنوان env var ست کن)
-ADMIN_ID = 8014203768  # آیدی عددی ادمین (مانی)
-CARD_NUMBER = "6219861907741234"  # شماره کارتت را اینجا بذار اگر می‌خوای در متن نمایش داده شود
-STORAGE_FILE = "storage.json"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+bot = telebot.TeleBot(BOT_TOKEN)
 
-# ---------------- Bot init
-TOKEN = os.getenv("BOT_TOKEN")
-if not TOKEN:
-    raise RuntimeError("BOT_TOKEN environment variable not set")
+# این لیست کانفیگ‌هاست که خودت دستی اضافه می‌کنی
+config_list = []
 
-bot = TeleBot(TOKEN, parse_mode=None)
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.reply_to(message, "سلام! به ربات فروش کانفیگ خوش اومدی 🌐\n\nبرای خرید /buy رو بزن.")
+
+@bot.message_handler(commands=['add'])
+def add_config(message):
+    # فقط آی‌دی خودت اجازه اضافه کردن کانفیگ داشته باشه
+    if message.from_user.id != 8014203768:
+        bot.reply_to(message, "اجازه نداری ⚠️")
+        return
+    
+    cfg = message.text.replace("/add ", "").strip()
+    if cfg:
+        config_list.append(cfg)
+        bot.reply_to(message, "کانفیگ اضافه شد ✔️")
+    else:
+        bot.reply_to(message, "فرمت اشتباهه. مثل:\n/add vmess://xxxx")
+
+@bot.message_handler(commands=['list'])
+def list_configs(message):
+    if message.from_user.id != 8014203768:
+        bot.reply_to(message, "اجازه نداری ⚠️")
+        return
+    
+    if not config_list:
+        bot.reply_to(message, "لیست کانفیگ‌ها خالیه ❗")
+    else:
+        result = "\n\n".join(config_list)
+        bot.reply_to(message, f"لیست کانفیگ‌ها:\n\n{result}")
+
+@bot.message_handler(commands=['buy'])
+def buy(message):
+    if not config_list:
+        bot.reply_to(message, "کانفیگی موجود نیست ❗")
+        return
+
+    cfg = config_list.pop(0)
+    bot.reply_to(message, f"کانفیگت آماده‌ست:\n\n{cfg}")
+
+bot.infinity_polling()
